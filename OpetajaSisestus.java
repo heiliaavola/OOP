@@ -2,8 +2,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.io.*;
+import java.nio.file.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class ÕpetajaSisestus implements TeineSisend {
+    private final String vabadeAegadeFail = "ÕpetajadVabadAjad.txt";
+    private DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     public void sisesta(Scanner scanner) {
         String nimi;
         double tunnihind = 0.0;
@@ -63,11 +70,18 @@ public class ÕpetajaSisestus implements TeineSisend {
             }
         }
 
-        // Tunniaegade sisestus ja kinnitus
-        System.out.println("Sisesta ÜKSHAAVAL oma tundide algusajad, arvestades, et üks tund = 45 min (formaadis HH:MM) vastus: ");
-        while (!(tunniaeg = scanner.nextLine()).equalsIgnoreCase("valmis")) {
-            tunniajad.add(tunniaeg);
-            System.out.println("Tunniaeg lisatud. Sisesta järgmine aeg või 'valmis': ");
+        // Tunniaegade sisestus
+        System.out.println("Sisesta ÜKSHAAVAL oma tundide algusajad (kuupäev ja kellaaeg formaadis yyyy-MM-dd HH:mm), kirjuta 'valmis', kui oled lõpetanud: ");
+        String input = scanner.nextLine();
+        while (!input.equalsIgnoreCase("valmis")) {
+            try {
+                LocalDateTime tunniAeg = LocalDateTime.parse(input, dateTimeFormatter);
+                tunniajad.add(tunniAeg.format(dateTimeFormatter));
+                System.out.println("Tunniaeg lisatud. Sisesta järgmine aeg või 'valmis': ");
+            } catch (Exception e) {
+                System.out.println("Vigane formaat, palun sisesta kuupäev ja kellaaeg formaadis yyyy-MM-dd HH:mm");
+            }
+            input = scanner.nextLine();
         }
 
         // Sisestuste kokkuvõte
@@ -80,28 +94,73 @@ public class ÕpetajaSisestus implements TeineSisend {
         System.out.print("Tunniajad: " + String.join(", ", tunniajad));
         System.out.println();
 
-        // FAILI LUGEMISE MEETOD: 1. LOO TÜHI ÕPETAJA TÜÜPI LIST 2. LOO IGA REA KOHTA UUS ÕPETAJA OBJEKT 3. LISA IGA ÕPETAJA OBJEKT LISTI
-        // new Array<Õpetaja(nimi + aine + ajad+...)> õpetajad
-        //FAIL ÕPETAJATE_SISU: "Anu Saun", põhikool, matemaatika/keemia, [10.04.2024 12.15]/13.00/13.45
-        // loe kõik failis olevad andmed listi õpetajad FAILIST KÕIK VARASEM -> LISTI
-        //LIST õpetajad[{Õpetaja1_nimi, Õpetaja1_ained, Õpetaja1_ajad}, {Õpetaja2_nimi, Õpetaja2_ained, Õpetaja2_ajad}]
-        //for (õpetaja: õpetajad){
-        //    nimi = õpetaja.getnimi();
-        //    ...
-        //}
-
-        //Teeb uue Õpetaja Objekti (õpetaja klassi objekt) sisestuse põhjal
-        //Kui listis on juba see õpetaja, ss lisab õpetajale ajad/ained
-        //Kui ei ole seda õpetajat listis, siis paneb uue objekti listi
-        //KUI SISESTUS LÄBI, siis kirjutab faili ÕPETAJATE_INFO üle
-        //Õpetaja klassis meetod kirjuta faili - selle põhjal praegune sisestus õpetaja_sisestus faili
-
-
-        // Siia on vaja koodi, mis salvestab kõik sisestused vabade aegade teksti faili
-        // Ma arvan, et failis võiks igale reale salvestada ühe aja, koos õpetaja muu infoga
-        // ÕpetajadVabadAjad: Kuupäev - kell - õpetaja - tunnihind - kõik ained - õppeastmed
-        // siis ei teki probleemi uute aegade sisestamisega
+        try {
+            List<Õpetaja> olemasolevadÕpetajad = loeÕpetajadFailist();
+            Õpetaja uusÕpetaja = leiaVõiLooÕpetaja(olemasolevadÕpetajad, nimi, tunnihind, ained, õppeastmed, tunniajad);
+            if (!olemasolevadÕpetajad.contains(uusÕpetaja)) {
+                olemasolevadÕpetajad.add(uusÕpetaja); // Lisame uue õpetaja, kui ta ei ole juba nimekirjas
+            }
+            salvestaÕpetajadFaili(olemasolevadÕpetajad); // Salvestame kõik õpetajad (uuendatud või uued) tagasi faili
+        } catch (IOException e) {
+            System.err.println("Failiga töötamisel tekkis viga: " + e.getMessage());
+        }
     }
 
-}
+    // Meetod olemasoleva õpetaja leidmiseks või uue loomiseks
+    private Õpetaja leiaVõiLooÕpetaja(List<Õpetaja> õpetajad, String nimi, double tunnihind, List<String> ained, List<String> õppeastmed, List<String> tunniajad) {
+        for (Õpetaja olemasolev : õpetajad) {
+            if (olemasolev.getNimi().equalsIgnoreCase(nimi)) {
+                // Uuendame olemasoleva õpetaja andmeid
+                olemasolev.setTunnihind(tunnihind);
+                olemasolev.setAined(new ArrayList<>(ained)); // Vajadusel täiendage loogikat, et lisada ainult uued ained
+                olemasolev.setÕppeastmed(new ArrayList<>(õppeastmed)); // Sama õppeastmetele
+                olemasolev.setTunniajad(new ArrayList<>(tunniajad)); // Ja tunniaegadele
+                return olemasolev;
+            }
+        }
+        // Kui õpetaja ei ole olemas, loome uue
+        return new Õpetaja(nimi, tunnihind, ained, õppeastmed, tunniajad);
+    }
 
+    // Loetleb olemasolevad andmed failist
+    private List<Õpetaja> loeÕpetajadFailist() throws IOException {
+        List<Õpetaja> õpetajad = new ArrayList<>();
+        Path path = Paths.get(vabadeAegadeFail);
+        if (Files.exists(path)) {
+            List<String> read = Files.readAllLines(path);
+            for (String rida : read) {
+                String[] osad = rida.split(",");
+                String nimi = osad[0];
+                double tunnihind = Double.parseDouble(osad[1]);
+                List<String> ained = Arrays.asList(osad[2].split("/"));
+                List<String> õppeastmed = Arrays.asList(osad[3].split("/"));
+                List<String> tunniajad = new ArrayList<>(Arrays.asList(osad[4].split("/")));
+                Õpetaja õpetaja = new Õpetaja(nimi, tunnihind, ained, õppeastmed, tunniajad);
+                õpetajad.add(õpetaja);
+            }
+        }
+        return õpetajad;
+    }
+
+    // Salvestab andmed faili
+    private void salvestaÕpetajadFaili(List<Õpetaja> õpetajad) throws IOException {
+        Path path = Paths.get(vabadeAegadeFail);
+        List<String> kirjutatavadRead = new ArrayList<>();
+        for (Õpetaja õpetaja : õpetajad) {
+            String rida = õpetaja.getNimi() + "," +
+                    õpetaja.getTunnihind() + "," +
+                    String.join("/", õpetaja.getAined()) + "," +
+                    String.join("/", õpetaja.getÕppeastmed()) + "," +
+                    String.join("/", õpetaja.getTunniajad());
+            kirjutatavadRead.add(rida);
+        }
+        Files.write(path, kirjutatavadRead);
+    }
+}
+/* Tehtud lisad 19_03_24 Heili
+1. Lisatud ajaformaat DateTimeFormatter "yyyy-MM-dd HH:mm", edaspidi kasutame läbivalt seda.
+2. Meetod 'loeÕpetajadFailist' loeb olemasolevad andmed failist 'ÕpetajadVabadAjad.txt', konverteerib need 'Õpetaja' objektideks ja koostab nende põhjal listi.
+3. Kui õpetaja on juba olemas (sama nimi), siis saab lisada infot (tunnihinna uuendamine, ained ja õppeastmed - uued ained ja õppeastmed lisatakse olemasolevatele, vältides dubleerimist, tunniajad)
+4. Kui õpetaja on uus ja pole temanimelist veel failis, siis luuakse uus Õpetaja objekt ja lisatakse see andmete listi.
+5. Kõik muudatused salvestab meetod 'salvestaÕpetajadFaili' tekstifaili õÕpetajadVabadAjad.txt'
+ */
