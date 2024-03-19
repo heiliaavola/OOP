@@ -1,5 +1,5 @@
 import java.util.Scanner;
-//MUUTSIN KOODI!!
+//MUUTSIN KOODI2!!
 
 public class ÕpetajaAjalugu implements TeineSisend{
     public void sisesta(Scanner scanner) {
