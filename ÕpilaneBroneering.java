@@ -8,7 +8,7 @@ import java.util.*;
 public class ÕpilaneBroneering implements TeineSisend {
 
     private final String vabadeAegadeFail = "ÕpetajadVabadAjad.txt";
-    private final String õpilasteBroneeringuteFail = "ÕpilasedBroneeringud.txt";
+    private final String õpilasteBroneeringuteFail = "Broneeringud.txt";
 
     public void sisesta(Scanner scanner) {
         String nimi;
@@ -173,7 +173,7 @@ public class ÕpilaneBroneering implements TeineSisend {
         //5.a) Esmalt uuendame listi olemasolevadÕpetajad
         for (Õpetaja õpetaja : olemasolevadÕpetajad) {
             if (valitudÕpetaja.equals(õpetaja)) {
-                if (valitudÕpetaja.getTunniajad().isEmpty()) {
+                if (valitudÕpetajaSaadavalTunniajad.isEmpty()) {
                     olemasolevadÕpetajad.remove(õpetaja); // Eemaldame õpetaja täielikult, kui saadavalolevate tundide loend on tühi - õpetajal said ajad otsa
                 } else {
                     õpetaja.setTunniajad(valitudÕpetajaSaadavalTunniajad);
@@ -212,7 +212,7 @@ public class ÕpilaneBroneering implements TeineSisend {
         return õpetajad;
     }
 
-    //MEETOD Õpilaste broneeringute salvestamiseks faili ÕpilasedBroneeringud.txt
+    //MEETOD Õpilaste broneeringute salvestamiseks faili Broneeringud.txt
     //KUJUL: õpilase nimi, õpetaja nimi, tunnihind, broneeringu_maksumus, tunniajad
     //NÄITEKS: Yana , Marvin , 25.0 , 50.0 , [2023-12-12 12:00, 2023-12-12 15:00]
     private void salvestaÕpilasteBroneeringudFaili (Õpilane praegune_õpilane, Õpetaja valitud_õpetaja, List<String> broneeritud_ajad, double broneeringu_maksumus) throws IOException {
@@ -255,4 +255,3 @@ public class ÕpilaneBroneering implements TeineSisend {
 //Uuendatakse listi olemasolevadÕpetajad, eemaldades sealt broneeritud ajad (kui õpetajal saavad ajad otsa, siis eemaldatakse õpetaja täielikult, muidu läks kood järgmisel jooksutamisel katki)
 //Fail ÕpetajadVabadAjad kirjutatakse üle listi olemasolevadÕpetajad põhjal - sama meetod (salvestaÕpetajadFaili), mis Heili kirjutas ÕpetajaSisestus klassis
 
-// Siit puudu veel MEETOD Õpetaja ajaloo salvestamiseks ja kulude arvestus
