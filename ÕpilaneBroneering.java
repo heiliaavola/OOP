@@ -121,13 +121,13 @@ public class ÕpilaneBroneering implements TeineSisend {
         System.out.println("Vali ÜKSHAAVAL koos kuupäevaga endale sobivad ajad soovitud õpetajalt: ");
         System.out.println("Saadavalolevad ajad: ");
         Õpetaja valitudÕpetaja = null;
-        //List<String> valitudÕpetajaSaadavalTunniajad = new ArrayList<>();
+        List<String> valitudÕpetajaSaadavalTunniajad = new ArrayList<>();
         for (Õpetaja õpetaja : sobivadÕpetajad) {
             if (õpetaja.getNimi().equalsIgnoreCase(valitudÕpetajaNimi)) {
                 valitudÕpetaja = õpetaja;
                 for (String aeg : valitudÕpetaja.getTunniajad()) {
                     System.out.println(aeg);
-                    //valitudÕpetajaSaadavalTunniajad.add(aeg);
+                    valitudÕpetajaSaadavalTunniajad.add(aeg);
                 }
                 break;
             }
@@ -135,9 +135,9 @@ public class ÕpilaneBroneering implements TeineSisend {
         List<String> õpilaseValitudAjad = new ArrayList<>();
         for (int i = 0; i < tundideArv; i++) {
             String aeg = scanner.nextLine();
-            if (valitudÕpetaja.getTunniajad().contains(aeg)) { // Lisame kontrolli, kas antud aeg on saadaval
+            if (valitudÕpetajaSaadavalTunniajad.contains(aeg)) { // Lisame kontrolli, kas antud aeg on saadaval
                 õpilaseValitudAjad.add(aeg);
-                valitudÕpetaja.tunniaegade_eelmaldus(Collections.singletonList(aeg)); // Eemaldame valitud aja saadavalolevate aegade hulgast
+                valitudÕpetajaSaadavalTunniajad.remove(aeg); //Eemaldame valitud aja saadavalolevate aegade hulgast
                 System.out.println("Aeg valitud!");
                 if (i != tundideArv-1){
                     System.out.println("Palun vali järgmine sobiv aeg: ");
@@ -152,9 +152,13 @@ public class ÕpilaneBroneering implements TeineSisend {
             System.out.println(s);
         }
 
+        //3.b arvutame broneeringu hinna
+        double broneeringuMaksumus = valitudÕpetaja.broneeringu_maksumus(õpilaseValitudAjad.size());
+        System.out.println("Broneeringu summa: " + broneeringuMaksumus + "€");
+
         //4. Salvestame õpilase broneeringu faili:
         try {
-            salvestaÕpilasteBroneeringudFaili(praeguneÕpilane,valitudÕpetaja, õpilaseValitudAjad); //
+            salvestaÕpilasteBroneeringudFaili(praeguneÕpilane,valitudÕpetaja, õpilaseValitudAjad, broneeringuMaksumus); //
         } catch (IOException e) {
             System.err.println("Failiga töötamisel tekkis viga: " + e.getMessage());
         }
@@ -172,7 +176,7 @@ public class ÕpilaneBroneering implements TeineSisend {
                 if (valitudÕpetaja.getTunniajad().isEmpty()) {
                     olemasolevadÕpetajad.remove(õpetaja); // Eemaldame õpetaja täielikult, kui saadavalolevate tundide loend on tühi - õpetajal said ajad otsa
                 } else {
-                    õpetaja.setTunniajad(valitudÕpetaja.getTunniajad());
+                    õpetaja.setTunniajad(valitudÕpetajaSaadavalTunniajad);
                 }
                 break; // Lõpeta pärast leidmise esinemist
             }
@@ -185,10 +189,8 @@ public class ÕpilaneBroneering implements TeineSisend {
         }
 
 
-        System.out.println("Broneeringu summa: puudu"); // Siia lisada sisu, kui see on valmis
 
     }
-
 
     //MEETOD Õpetajate vabade aegade lugemiseks FAILIST LISTI
     private List<Õpetaja> loeÕpetajadFailist() throws IOException {
@@ -210,12 +212,16 @@ public class ÕpilaneBroneering implements TeineSisend {
         return õpetajad;
     }
 
-    // MEETOD Õpilaste broneeringute salvestamiseks faili ÕpilasedBroneeringud.txt
-    //KUJUL: õpilase nimi, õpetaja nimi, tunnihind, tunniajad
-    //NÄITEKS: Liina , Raul , 20.0 , [2020-12-12 12:00]
-    private void salvestaÕpilasteBroneeringudFaili (Õpilane praegune_õpilane, Õpetaja valitud_õpetaja, List<String> broneeritud_ajad) throws IOException {
+    //MEETOD Õpilaste broneeringute salvestamiseks faili ÕpilasedBroneeringud.txt
+    //KUJUL: õpilase nimi, õpetaja nimi, tunnihind, broneeringu_maksumus, tunniajad
+    //NÄITEKS: Yana , Marvin , 25.0 , 50.0 , [2023-12-12 12:00, 2023-12-12 15:00]
+    private void salvestaÕpilasteBroneeringudFaili (Õpilane praegune_õpilane, Õpetaja valitud_õpetaja, List<String> broneeritud_ajad, double broneeringu_maksumus) throws IOException {
         Path path = Paths.get(õpilasteBroneeringuteFail);
-        String rida = praegune_õpilane.getNimi() + " , " + valitud_õpetaja.getNimi() + " , " + valitud_õpetaja.getTunnihind() + " , " + broneeritud_ajad;
+        String rida = praegune_õpilane.getNimi() + " , " +
+                valitud_õpetaja.getNimi() + " , " +
+                valitud_õpetaja.getTunnihind() + " , " +
+                broneeringu_maksumus + " , " +
+                broneeritud_ajad;
         Files.write(path, Collections.singletonList(rida), StandardOpenOption.APPEND); // Kasutame APPEND-i, et lisada uued andmed faili lõppu
     }
 
@@ -239,12 +245,12 @@ public class ÕpilaneBroneering implements TeineSisend {
 
 
 //ANETT 19.03 - 20.03
-//Kirjutasin koodi, mille põhjal luuakse ÕpilaneBroneering klassis õpilase fail
+//Kirjutasin koodi, mille põhjal luuakse kõigepealt õpilase klassi objekt "praeguneÕpilane"
 //ÕpetajadVabadAjad failist loetakse sisse andmed õpetajate ja nende vabade aegade kohta ja salvestatakse need listi olemasolevadÕpetajad (loeÕpetajadFailist) - sama meetod, mis Heili kirjutas ÕpetajaSisestus klassi
 //Seejärel võrreldakse õpilase sisestatud soove olemasolevate õpetajate tundide jm andmetega ja luuakse list sobivadõpetajad
 //Sealt väljastatakse nii sobivate õpetajate nimed, tunnihinnad kui ka saadavalolevad ajad kasutajale (ehk broneerivale õpilasele)
 //NB! Siit veel täielikult puudu see osa, et mis saab, kui pole ühtegi sobivat õpetajat
-//Broneerijal lastakse valida endale sobiv õpetajad ja ajad
+//Broneerijal lastakse valida endale sobiv õpetajad ja ajad, tekitatakse Õpetaja objekt "valitudÕpetaja"
 //Seejärel loetakse broneeringuandemd faili ÕpilaneBroneering (igal real uus broneering formaadis: õpilase nimi, õpetaja nimi, tunnihind, tunniajad) - selle jaoks siin uus meetod
 //Uuendatakse listi olemasolevadÕpetajad, eemaldades sealt broneeritud ajad (kui õpetajal saavad ajad otsa, siis eemaldatakse õpetaja täielikult, muidu läks kood järgmisel jooksutamisel katki)
 //Fail ÕpetajadVabadAjad kirjutatakse üle listi olemasolevadÕpetajad põhjal - sama meetod (salvestaÕpetajadFaili), mis Heili kirjutas ÕpetajaSisestus klassis

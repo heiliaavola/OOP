@@ -70,7 +70,15 @@ public class Õpetaja {
                 '}';
     }
 
-    public void tunniaegade_eelmaldus(List<String> eemaldatavad_tunniajad){
-        this.tunniajad.remove(eemaldatavad_tunniajad);
+
+    public double broneeringu_maksumus(int tundide_arv){
+        if (tundide_arv < 5){
+            return (this.tunnihind * tundide_arv);
+        }
+        else{ //Iga 5. tund 10% odavam
+            int soodusega_tunde = (int) Math.floor(tundide_arv/5);
+            double maksumus = (tundide_arv - soodusega_tunde)*this.tunnihind + soodusega_tunde*(this.tunnihind*0.9);
+            return maksumus;
+        }
     }
 }
