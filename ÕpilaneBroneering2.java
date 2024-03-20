@@ -5,7 +5,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 
-public class ÕpilaneBroneering implements TeineSisend {
+public class ÕpilaneBroneering2 implements TeineSisend {
 
     private final String vabadeAegadeFail = "ÕpetajadVabadAjad.txt";
     private final String õpilasteBroneeringuteFail = "ÕpilasedBroneeringud.txt";
