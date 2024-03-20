@@ -3,6 +3,7 @@ import java.util.List;
 public class Õpetaja {
     private String nimi;
     private double tunnihind;
+
     private List<String> ained;
     private List<String> õppeastmed;
     private List<String> tunniajad;
@@ -56,5 +57,20 @@ public class Õpetaja {
 
     public void setTunniajad(List<String> tunniajad) {
         this.tunniajad = tunniajad;
+    }
+
+    @Override
+    public String toString() {
+        return "Õpetaja{" +
+                "nimi='" + nimi + '\'' +
+                ", tunnihind=" + tunnihind +
+                ", ained=" + ained +
+                ", õppeastmed=" + õppeastmed +
+                ", tunniajad=" + tunniajad +
+                '}';
+    }
+
+    public void tunniaegade_eelmaldus(List<String> eemaldatavad_tunniajad){
+        this.tunniajad.remove(eemaldatavad_tunniajad);
     }
 }

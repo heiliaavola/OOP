@@ -1,0 +1,2 @@
+Marta,15.0,matemaatika,põhikool,2005-12-12 12:30
+Raul,20.0,keemia/matemaatika,gümnaasium/põhikool,2020-12-12 12:45/2020-12-12 13:30
